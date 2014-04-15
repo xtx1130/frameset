@@ -15,19 +15,22 @@
 			},
 			$: function(str) {
 				str = str.split(' ') || 'window';
-				xtx.$.prototype=xtx;
+				xtx.$.prototype = xtx;
 				var tempo = document,
 					tempopt,
-					regEncoding = "(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+",
+					regEncoding = "(?:\\\\.|[\\w\-?\\d*]|[^\\x00-\\xa0])+",
 					whitespace = "[\\x20\\t\\r\\n\\f]",
+					attr = "(?:\\[(.*)\\])?",
 					RE = {
-						"ID": new RegExp("^#(" + regEncoding + ")"),
-						"CLASS": new RegExp("^\\.(" + regEncoding + ")"),
-						"TAG": new RegExp("^(" + regEncoding.replace("w", "w*") + ")")
+						"ID": new RegExp("^#(" + regEncoding + ")" + attr),
+						"CLASS": new RegExp("^\\.(" + regEncoding + ")" + attr),
+						"TAG": new RegExp("^(" + regEncoding.replace("w", "w*") + ")" + attr)
 					},
 					order = ['ID', 'CLASS', 'TAG'],
 					FIND = {
 						ID: function(obj, name) {
+							if (arguments[2])
+								obj = doAttr(obj, arguments[2]);
 							if (obj && !doChklen(obj)) {
 								return (function getElementsByClass(searchId, node) {
 									var els = node.getElementsByTagName('*'),
@@ -42,59 +45,137 @@
 									return idElements;
 								})(name, obj);
 							} else if (obj) {
-								for (var i = 0; i < obj.length; i++) {
+								xtx.each(obj, function() {
+									var that = this;
 									return (function getElementsByClass(searchId, node) {
 										var els = node.getElementsByTagName('*'),
 											elsLen = els.length,
 											i;
 										for (i = 0; i < elsLen; i++) {
-											if (els[i].getAttribute('id') == searchId) {
-												var idElements = els[i];
+											if (that.getAttribute('id') == searchId) {
+												var idElements = that;
 												break;
 											}
 										}
 										return idElements;
 									})(name, obj[i]);
-								}
+								})
+
+
 							} else {
 								return document.getElementById(name);
 							}
 						},
 						CLASS: function(obj, name) {
 							if (obj) {
-								return xtx.getElementsByClassName(obj, name);
+								return getElementsByClassName(obj, name, arguments[2]);
 							} else {
-								return xtx.getElementsByClassName(document, name);
+								return getElementsByClassName(document, name, arguments[2]);
 							}
 						},
 						TAG: function(obj, name) {
+							if (arguments[2])
+								obj = doAttr(obj, arguments[2]);
+							var temarr = [];
 							if (obj && !doChklen(obj)) {
 								return obj.getElementsByTagName(name)[0];
 							} else if (obj) {
-								for (var i = 0; i < obj.length; i++) {
-									return obj[i].getElementsByTagName(name)[0];
-								}
+								xtx.each(obj, function() {
+									if (this.getElementsByTagName(name)[0])
+										temarr.push(this.getElementsByTagName(name)[0]);
+								})
+
+								return temarr.length == 1 ? temarr[0] : temarr;
 							} else
 								return document.getElementsByTagName(name)[0];
 						}
-					}
+					};
 
-					function doFind(obj, st) {
-						var arr = [],
-							match,
-							obj = obj || '';
-						for (var i = 0, len = order.length; i < len; i++) {
-							if (match = RE[order[i]].exec(st)) {
-								return FIND[order[i]](obj, match[1]);
+				function getElementsByClassName(node, classname) {
+					function getClass(searchClass, node) {
+						if (node == null)
+							node = document;
+						var classElements = [],
+							els = node.getElementsByTagName('*'),
+							elsLen = els.length,
+							pattern = new RegExp('(^|\\s)' + searchClass + '(\\s|$)'),
+							k, j;
+						for (k = 0, j = 0; k < elsLen; k++) {
+							if (pattern.test(els[k].className)) {
+								classElements[j] = els[k];
+								j++;
+							}
+						}
+						if (arguments[2])
+							classElements = doAttr(classElements, arguments[2]);
+						return classElements.length == 1 ? classElements[0] : classElements;
+					}
+					if (node == document) {
+						if (node.getElementsByClassName) {
+							var tempcla = node.getElementsByClassName(classname);
+							if (arguments[2])
+								tempcla = doAttr(tempcla, arguments[2]);
+							return tempcla.length == 1 ? tempcla[0] : tempcla;
+						} else {
+							return getclass(classname, node, arguments[2]);
+						}
+					} else {
+						if (!node.length) {
+							if (node.getElementsByClassName) {
+								var tempcla = node.getElementsByClassName(classname);
+								if (arguments[2])
+									tempcla = doAttr(tempcla, arguments[2]);
+								return tempcla.length == 1 ? tempcla[0] : tempcla;
+							} else {
+								return getclass(classname, node, arguments[2]);
+							}
+						} else {
+							for (var i = 0; i < node.length; i++) {
+								if (node[i].getElementsByClassName) {
+									var tempcla = node.getElementsByClassName(classname);
+									if (arguments[2])
+										tempcla = doAttr(tempcla, arguments[2]);
+									return tempcla.length == 1 ? tempcla[0] : tempcla;
+								} else {
+									return getclass(classname, node[i], arguments[2]);
+								}
 							}
 						}
 					}
+				}
 
-					function doChklen(obj) {
-						if (obj.length)
-							return true;
-						return false;
+				function doFind(obj, st) { //main function about HTMLElements target
+					var arr = [],
+						match,
+						obj = obj || '';
+					for (var i = 0, len = order.length; i < len; i++) {
+						if (match = RE[order[i]].exec(st)) {
+							return FIND[order[i]](obj, match[1], match[2]);
+						}
 					}
+				}
+
+				function doAttr(obj, attr) {
+					var temarr = [];
+					if (obj && !doChklen(obj)) {
+						if (obj.getAttribute(attr)) {
+							return obj;
+						}
+					} else if (obj) {
+						for (var i = 0; i < obj.length; i++) {
+							if (obj[i].getAttribute(attr) != null) {
+								temarr.push(obj[i]);
+							}
+						}
+						return temarr.length == 1 ? temarr[0] : temarr;
+					}
+				}
+
+				function doChklen(obj) {
+					if (obj.length > 1)
+						return true;
+					return false;
+				}
 				for (var i = 0, tempj = ''; i < str.length; i++) {
 					if (i < str.length - 1) {
 						tempj = doFind(tempj, str[i]);
@@ -104,7 +185,7 @@
 				}
 			},
 			each: function(arr, func) {
-				if (typeof arr != ('boolean' || 'number')) {
+				if (typeof arr != ('boolean' || 'number' || 'string')) {
 					//arr = new Array(arr);
 					if (arr.constructor == Object) {
 						for (var i in arr) {
@@ -130,41 +211,41 @@
 			 */
 			Callback: function(str) {
 				str = str || 'base';
-				var opt = CallbackQueue[str]?CallbackQueue[str]:CallbackQueue[str]=[],
+				var opt = CallbackQueue[str] ? CallbackQueue[str] : CallbackQueue[str] = [],
 					reg = /oncememory/ig;
-					self = {
-						add: function() {
-							xtx.each(arguments, function(e) {
-								if (e.constructor == Function) {
-									var tem = e;
-									opt.push(tem);
-								}
-							});
-						},
-						fire: function(o) {
-							var temlist = [];
-							if (opt && opt.length != 0 && str.match(reg)) {
-								opt.shift().call(this, o);
-								opt = undefined;
-							}else if(opt && opt.length != 0 && !str.match(reg)){
-								while(opt.length){
-									var tem = opt.shift();
-									tem.call(this, o);
-									temlist.push(tem);
-								}
-								opt=temlist;
+				self = {
+					add: function() {
+						xtx.each(arguments, function(e) {
+							if (e.constructor == Function) {
+								var tem = e;
+								opt.push(tem);
 							}
-						},
-						disable: function(st){
-							st = str;
-							if(CallbackQueue[st])
-								CallbackQueue[st] = undefined;
-						},
-						queue: function(st){
-							st = str;
-							return CallbackQueue[st];
+						});
+					},
+					fire: function(o) {
+						var temlist = [];
+						if (opt && opt.length != 0 && str.match(reg)) {
+							opt.shift().call(this, o);
+							opt = undefined;
+						} else if (opt && opt.length != 0 && !str.match(reg)) {
+							while (opt.length) {
+								var tem = opt.shift();
+								tem.call(this, o);
+								temlist.push(tem);
+							}
+							opt = temlist;
 						}
+					},
+					disable: function(st) {
+						st = str;
+						if (CallbackQueue[st])
+							CallbackQueue[st] = undefined;
+					},
+					queue: function(st) {
+						st = str;
+						return CallbackQueue[st];
 					}
+				}
 				return self;
 			},
 			Deferred: function() {
@@ -237,7 +318,7 @@
 	xtx.ui = {};
 	xtx.reg = {
 		//匹配html中自关闭标签用replace替换为成对标签eg:<div/> -> <div></div>
-		rxhtmlTag:/<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig
+		rxhtmlTag: /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig
 
 	};
 	xtx.ext({
@@ -261,36 +342,38 @@
 		},
 		/**
 		 * @description 元素触发事件队列，可以进行一次事件触发绑定或者多次触发事件的绑定
-		 * @param {string} arguments[0] 可有可无，如果不写则默认为click事件 
+		 * @param {string} arguments[0] 可有可无，如果不写则默认为click事件
 		 * @param {object} arguments[1] 绑定事件的对象
 		 * @param {function} arguments[2] 绑定的事件函数
 		 * @paran {boolean} arguments[3] 是否为触发一次的函数，默认为否
-		*/
-		superAddEvent:function(){
-			var method , obj , func, flag, list, str;
-			if(arguments[0].constructor == String){
+		 */
+		superAddEvent: function() {
+			var method, obj, func, flag, list, str;
+			if (arguments[0].constructor == String) {
 				method = arguments[0];
 				obj = arguments[1];
 				func = arguments[2];
-				flag = arguments[3]||0;
-			}else{
+				flag = arguments[3] || 0;
+			} else {
 				method = 'click';
 				obj = arguments[0];
 				func = arguments[1];
-				flag = arguments[2]||0;
+				flag = arguments[2] || 0;
 			}
-			if(flag){
-				str = 'Cdoc_'+method+'oncememory';
-			}else{
-				str = 'Cdoc_'+method;
+			if (flag) {
+				str = 'Cdoc_' + method + 'oncememory';
+			} else {
+				str = 'Cdoc_' + method;
 			}
 			list = xtx.Callback(str);
 			list.add(func);
-			if(list.queue()){
-				xtx.bindEvent(obj,method,function(){
-					list.fire();
-				});	
-			}	
+			if (list.queue()) {
+				xtx.each(obj, function() {
+					xtx.bindEvent(this, method, function() {
+						list.fire();
+					});
+				})
+			}
 		},
 		getLength: function(str, shortUrl) {
 			str = str + '';
@@ -391,47 +474,6 @@
 				return obj.currentStyle[attr];
 			} else {
 				return getComputedStyle(obj, false)[attr];
-			}
-		},
-		getElementsByClassName: function(node, classname) {
-			function getClass(searchClass, node) {
-				if (node == null)
-					node = document;
-				var classElements = [],
-					els = node.getElementsByTagName('*'),
-					elsLen = els.length,
-					pattern = new RegExp('(^|\\s)' + searchClass + '(\\s|$)'),
-					k, j;
-				for (k = 0, j = 0; k < elsLen; k++) {
-					if (pattern.test(els[k].className)) {
-						classElements[j] = els[k];
-						j++;
-					}
-				}
-				return classElements;
-			}
-			if (node == document) {
-				if (node.getElementsByClassName) {
-					return node.getElementsByClassName(classname);
-				} else {
-					return getclass(classname, node);
-				}
-			} else {
-				if (!node.length) {
-					if (node.getElementsByClassName) {
-						return node.getElementsByClassName(classname);
-					} else {
-						return getclass(classname, node);
-					}
-				} else {
-					for (var i = 0; i < node.length; i++) {
-						if (node[i].getElementsByClassName) {
-							return node[i].getElementsByClassName(classname);
-						} else {
-							return getclass(classname, node[i]);
-						}
-					}
-				}
 			}
 		},
 		nextSibling: function(node) {
