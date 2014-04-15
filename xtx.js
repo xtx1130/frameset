@@ -117,7 +117,7 @@
 								tempcla = doAttr(tempcla, arguments[2]);
 							return tempcla.length == 1 ? tempcla[0] : tempcla;
 						} else {
-							return getclass(classname, node, arguments[2]);
+							return getClass(classname, node, arguments[2]);
 						}
 					} else {
 						if (!node.length) {
@@ -127,7 +127,7 @@
 									tempcla = doAttr(tempcla, arguments[2]);
 								return tempcla.length == 1 ? tempcla[0] : tempcla;
 							} else {
-								return getclass(classname, node, arguments[2]);
+								return getClass(classname, node, arguments[2]);
 							}
 						} else {
 							for (var i = 0; i < node.length; i++) {
@@ -137,7 +137,7 @@
 										tempcla = doAttr(tempcla, arguments[2]);
 									return tempcla.length == 1 ? tempcla[0] : tempcla;
 								} else {
-									return getclass(classname, node[i], arguments[2]);
+									return getClass(classname, node[i], arguments[2]);
 								}
 							}
 						}
