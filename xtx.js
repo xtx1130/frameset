@@ -14,7 +14,7 @@
 				if (extended) extended(this);
 			},
 			$: function(str) {
-				str = str.split(' ') || 'window';
+				str = xtx.trim(str).split(' ') || 'window';
 				xtx.$.prototype = xtx;
 				var tempo = document,
 					tempopt,
@@ -74,20 +74,28 @@
 							}
 						},
 						TAG: function(obj, name) {
+							obj = obj||document;
 							if (arguments[2])
 								obj = doAttr(obj, arguments[2]);
 							var temarr = [];
 							if (obj && !doChklen(obj)) {
-								return obj.getElementsByTagName(name)[0];
+								var temo = obj.getElementsByTagName(name)
+								return temo.length == 1 ? temo[0] : temo;
 							} else if (obj) {
 								xtx.each(obj, function() {
-									if (this.getElementsByTagName(name)[0])
-										temarr.push(this.getElementsByTagName(name)[0]);
+									var temo = this.getElementsByTagName(name);
+									if ( temo){
+										for(var o in temo){
+											if(typeof temo[o] == 'object')//.constructor.toString().match(/html/ig))
+											temarr.push(temo[o])
+										}
+									}
 								})
-
 								return temarr.length == 1 ? temarr[0] : temarr;
-							} else
-								return document.getElementsByTagName(name)[0];
+							} else{
+								var temo = obj.getElementsByTagName(name);
+								return temo.length == 1 ? temo[0] : temo;
+							}
 						}
 					};
 
@@ -161,7 +169,7 @@
 						if (obj.getAttribute(attr)) {
 							return obj;
 						}
-					} else if (obj) {
+					} else if (obj) {	 
 						for (var i = 0; i < obj.length; i++) {
 							if (obj[i].getAttribute(attr) != null) {
 								temarr.push(obj[i]);
@@ -192,18 +200,14 @@
 							func.call(arr[i], arr[i]);
 						}
 					} else if (arr.constructor == String) {
-						func.call(window, arr);
+						func.call(arr, arr);
 					} else {
 						for (var i = 0, len = arr.length; i < len; i++) {
-							if (arr[i].constructor == Object)
-								func.call(arr[i], arr[i]);
-							else {
-								func.call(window, arr[i])
-							}
+							func.call(arr[i], arr[i]);
 						}
 					}
 				} else {
-					func.call(window, arr);
+					func.call(arr, arr);
 				}
 			},
 			/**
@@ -212,7 +216,7 @@
 			Callback: function(str) {
 				str = str || 'base';
 				var opt = CallbackQueue[str] ? CallbackQueue[str] : CallbackQueue[str] = [],
-					reg = /oncememory/ig;
+					reg = /oncememory/ig,
 				self = {
 					add: function() {
 						xtx.each(arguments, function(e) {
@@ -245,7 +249,7 @@
 						st = str;
 						return CallbackQueue[st];
 					}
-				}
+				};
 				return self;
 			},
 			Deferred: function() {
@@ -292,7 +296,6 @@
 					},
 					_always: function(func) {
 						mem.add(func);
-						console.log(1);
 					},
 					_done: function(func) {
 						oncemem.add(func);
@@ -709,7 +712,6 @@
 					var ne = xtx.getElementsByClassName(document, 'next')[0],
 						that = this;
 					ne.style.display = 'block';
-					console.log(that)
 					that.silde(ne, 'left', 440, function() {
 						xtx.delClass(ne, 'next');
 						that.doNext(ne)
