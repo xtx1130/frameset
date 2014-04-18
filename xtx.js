@@ -220,7 +220,7 @@
 				self = {
 					add: function() {
 						xtx.each(arguments, function(e) {
-							if (e.constructor == Function) {
+							if (e && typeof e == 'function') {
 								var tem = e;
 								opt.push(tem);
 							}
@@ -230,7 +230,7 @@
 						var temlist = [];
 						if (opt && opt.length != 0 && str.match(reg)) {
 							opt.shift().call(this, o);
-							opt = undefined;
+							opt = [];
 						} else if (opt && opt.length != 0 && !str.match(reg)) {
 							while (opt.length) {
 								var tem = opt.shift();
@@ -240,45 +240,54 @@
 							opt = temlist;
 						}
 					},
-					disable: function(st) {
-						st = str;
-						if (CallbackQueue[st])
-							CallbackQueue[st] = undefined;
+					disable: function() {
+						if (opt)
+							opt = undefined;
 					},
-					queue: function(st) {
-						st = str;
-						return CallbackQueue[st];
+					queue: function() {
+						return opt;
 					}
 				};
 				return self;
 			},
 			Deferred: function() {
 				var _this,
-					oncemem = xtx.Callback('once'),
+					oncemem = xtx.Callback('oncememory'),
 					mem = xtx.Callback('memory');
 
 				function deferred() {
 					_this = this;
-					_this.res = '';
 				};
 				deferred.prototype = {
-					resolve: function() {
+					resolve: function(fn) {
 						_this._always.apply(this);
-						_this._done.call(this);
+						_this._done.call(this,fn);
 					},
-					reject: function() {
+					reject: function(fn) {
 						_this._always.call(this);
-						_this._fail.call(this);
+						_this._fail.call(this,fn);
 					},
-					state: function() {
+					state: (function() {
 						return {
-							pending: function() {},
-							resolved: function() {},
-							rejected: function() {}
+							pending: function(fn) {
+								if(fn && typeof fn == 'function')
+									fn.call(this)
+							},
+							resolved: function(fn) {
+								if(fn && typeof fn == 'function')
+									_this.resolve.call(this,fn)
+							},
+							rejected: function(fn) {
+								if(fn && typeof fn == 'function')
+									_this.reject.call(this,fn)
+							}
 						}
-					},
+					})(),
 					promise: function() {
 						return {
+							then: (function(){
+								return new deferred();
+							}()),
 							state: _this.state,
 							promise: arguments.callee,
 							fail: _this._fail,
@@ -295,26 +304,33 @@
 						}
 					},
 					_always: function(func) {
-						mem.add(func);
+						if(mem.queue().length != 1)
+							mem.add(func);
+						mem.fire();
+						return _this;
 					},
 					_done: function(func) {
 						oncemem.add(func);
+						oncemem.fire();
 						delete _this._always;
 						delete _this._fail;
 						delete _this._done;
+						return _this;
 					},
 					_fail: function(func) {
 						oncemem.add(func);
+						oncemem.fire();
 						delete _this._always;
 						delete _this._done;
 						delete _this._fail;
+						return _this;
 					}
 				};
 				deferred.prototype.constructor = deferred;
 				return new deferred();
 			},
 			promise: function() {
-				this.Deferred.call(this);
+				return xtx.Deferred().promise.call(this);
 			}
 		}
 	})();
