@@ -14,8 +14,6 @@
 				if (extended) extended(this);
 			},
 			$: function(str) {
-				str = xtx.trim(str).split(' ') || 'window';
-				xtx.$.prototype = xtx;
 				var tempo = document,
 					tempopt,
 					regEncoding = "(?:\\\\.|[\\w\-?\\d*]|[^\\x00-\\xa0])+",
@@ -74,7 +72,7 @@
 							}
 						},
 						TAG: function(obj, name) {
-							obj = obj||document;
+							obj = obj || document;
 							if (arguments[2])
 								obj = doAttr(obj, arguments[2]);
 							var temarr = [];
@@ -84,20 +82,52 @@
 							} else if (obj) {
 								xtx.each(obj, function() {
 									var temo = this.getElementsByTagName(name);
-									if ( temo){
-										for(var o in temo){
-											if(typeof temo[o] == 'object')//.constructor.toString().match(/html/ig))
-											temarr.push(temo[o])
+									if (temo) {
+										for (var o in temo) {
+											if (typeof temo[o] == 'object') //.constructor.toString().match(/html/ig))
+												temarr.push(temo[o])
 										}
 									}
 								})
 								return temarr.length == 1 ? temarr[0] : temarr;
-							} else{
+							} else {
 								var temo = obj.getElementsByTagName(name);
 								return temo.length == 1 ? temo[0] : temo;
 							}
 						}
 					};
+				//main selector
+				selector = function(str) {
+					return new selector.fn.init(str)
+				};
+				selector.fn = selector.prototype = {
+					init: function(str) {
+						this[0] = jselemSelected(str);
+						this.length = 1;
+						this.context = document;
+					},
+					splice: [].splice,
+					next:function(){},
+					prev:function(){},
+					siblings:function(){},
+					children:function(){},
+					parent:function(){},
+					find:function(){}
+				}
+				selector.fn.init.prototype = selector.fn;
+				return selector(str);
+
+				function jselemSelected(str) {
+					str = xtx.trim(str).split(' ') || 'window';
+
+					for (var i = 0, tempj = ''; i < str.length; i++) {
+						if (i < str.length - 1) {
+							tempj = doFind(tempj, str[i]);
+						} else if (i == str.length - 1) {
+							return doFind(tempj, str[i]);
+						}
+					}
+				}
 
 				function getElementsByClassName(node, classname) {
 					function getClass(searchClass, node) {
@@ -169,7 +199,7 @@
 						if (obj.getAttribute(attr)) {
 							return obj;
 						}
-					} else if (obj) {	 
+					} else if (obj) {
 						for (var i = 0; i < obj.length; i++) {
 							if (obj[i].getAttribute(attr) != null) {
 								temarr.push(obj[i]);
@@ -184,13 +214,7 @@
 						return true;
 					return false;
 				}
-				for (var i = 0, tempj = ''; i < str.length; i++) {
-					if (i < str.length - 1) {
-						tempj = doFind(tempj, str[i]);
-					} else if (i == str.length - 1) {
-						return doFind(tempj, str[i]);
-					}
-				}
+
 			},
 			each: function(arr, func) {
 				if (typeof arr != ('boolean' || 'number' || 'string')) {
@@ -217,37 +241,37 @@
 				str = str || 'base';
 				var opt = CallbackQueue[str] ? CallbackQueue[str] : CallbackQueue[str] = [],
 					reg = /oncememory/ig,
-				self = {
-					add: function() {
-						xtx.each(arguments, function(e) {
-							if (e && typeof e == 'function') {
-								var tem = e;
-								opt.push(tem);
+					self = {
+						add: function() {
+							xtx.each(arguments, function(e) {
+								if (e && typeof e == 'function') {
+									var tem = e;
+									opt.push(tem);
+								}
+							});
+						},
+						fire: function(o) {
+							var temlist = [];
+							if (opt && opt.length != 0 && str.match(reg)) {
+								opt.shift().call(this, o);
+								opt = [];
+							} else if (opt && opt.length != 0 && !str.match(reg)) {
+								while (opt.length) {
+									var tem = opt.shift();
+									tem.call(this, o);
+									temlist.push(tem);
+								}
+								opt = temlist;
 							}
-						});
-					},
-					fire: function(o) {
-						var temlist = [];
-						if (opt && opt.length != 0 && str.match(reg)) {
-							opt.shift().call(this, o);
-							opt = [];
-						} else if (opt && opt.length != 0 && !str.match(reg)) {
-							while (opt.length) {
-								var tem = opt.shift();
-								tem.call(this, o);
-								temlist.push(tem);
-							}
-							opt = temlist;
+						},
+						disable: function() {
+							if (opt)
+								opt = undefined;
+						},
+						queue: function() {
+							return opt;
 						}
-					},
-					disable: function() {
-						if (opt)
-							opt = undefined;
-					},
-					queue: function() {
-						return opt;
-					}
-				};
+					};
 				return self;
 			},
 			Deferred: function() {
@@ -261,31 +285,31 @@
 				deferred.prototype = {
 					resolve: function(fn) {
 						_this._always.apply(this);
-						_this._done.call(this,fn);
+						_this._done.call(this, fn);
 					},
 					reject: function(fn) {
 						_this._always.call(this);
-						_this._fail.call(this,fn);
+						_this._fail.call(this, fn);
 					},
 					state: (function() {
 						return {
 							pending: function(fn) {
-								if(fn && typeof fn == 'function')
+								if (fn && typeof fn == 'function')
 									fn.call(this)
 							},
 							resolved: function(fn) {
-								if(fn && typeof fn == 'function')
-									_this.resolve.call(this,fn)
+								if (fn && typeof fn == 'function')
+									_this.resolve.call(this, fn)
 							},
 							rejected: function(fn) {
-								if(fn && typeof fn == 'function')
-									_this.reject.call(this,fn)
+								if (fn && typeof fn == 'function')
+									_this.reject.call(this, fn)
 							}
 						}
 					})(),
 					promise: function() {
 						return {
-							then: (function(){
+							then: (function() {
 								return new deferred();
 							}()),
 							state: _this.state,
@@ -304,7 +328,7 @@
 						}
 					},
 					_always: function(func) {
-						if(mem.queue().length != 1)
+						if (mem.queue().length != 1)
 							mem.add(func);
 						mem.fire();
 						return _this;
