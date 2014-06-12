@@ -13,6 +13,10 @@
 				xtx.extend(this, o);
 				if (extended) extended(this);
 			},
+			/**
+			 *@version:0.1
+			 *@description:add selector
+			*/
 			$: function(str) {
 				var tempo = document,
 					tempopt,
