@@ -1,3 +1,6 @@
+/**
+ *@author tianxin@leju.com
+ */
 ! function(_) {
 	var CallbackQueue = {};
 	var xtx = (function() {
@@ -14,9 +17,10 @@
 				if (extended) extended(this);
 			},
 			/**
-			 *@version:0.1
-			 *@description:add selector
-			*/
+			 *@version:0.2
+			 *@description:selector
+			 *@change:增加一些选择器扩展方法，内部封装selector，不可使用fn添加方法！！
+			 */
 			$: function(str) {
 				var tempo = document,
 					tempopt,
@@ -85,6 +89,7 @@
 								return temo.length == 1 ? temo[0] : temo;
 							} else if (obj) {
 								xtx.each(obj, function() {
+									console.log(this)
 									var temo = this.getElementsByTagName(name);
 									if (temo) {
 										for (var o in temo) {
@@ -106,17 +111,108 @@
 				};
 				selector.fn = selector.prototype = {
 					init: function(str) {
-						this[0] = jselemSelected(str);
-						this.length = 1;
+						if (str) {
+							if (Object.prototype.toString.call(str) == '[object Object]') {
+								if (str.length) {
+									return str;
+								} else {
+									this[0] = str;
+								}
+							} else if (Object.prototype.toString.call(str) != '[object String]') {
+								if (!str.length) {
+									this[0] = str;
+								} else if (str.length == 1) {
+									this[0] = str[0];
+								} else {
+									for (var i = 0; i < str.length; i++) {
+										this[i] = str[i]
+									}
+								}
+							} else {
+								var temobj = jselemSelected(str); //jselemSelected is the method deal with string
+								if (temobj.length > 1) {
+									for (var i = 0; i < temobj.length; i++) {
+										this[i] = temobj[i];
+									}
+								} else {
+									this[0] = temobj;
+									var i = 1;
+								}
+							}
+						}
+						this.length = i || 1;
 						this.context = document;
 					},
 					splice: [].splice,
-					next:function(){},
-					prev:function(){},
-					siblings:function(){},
-					children:function(){},
-					parent:function(){},
-					find:function(){}
+					/**
+					 *@description 返回xtx.$对象
+					 *@param {number} num 索引
+					 */
+					eq: function(num) {
+						var that = this;
+						return xtx.$(that[num]);
+					},
+					/**
+					 *@description 内部方法过滤多余标签。eg:<script><link><meta>
+					 *@return 过滤后的xtx.$对象
+					 */
+					_rejection: function() {
+						var that = this,
+							arr = [];
+						for (var i = 0, len = that.length; i < len; i++) {
+							if (!that[i].nodeName.match(/script|meta|title|link/ig)) {
+								arr.push(that[i]);
+							}
+						}
+						return xtx.$(arr);
+					},
+					/**
+					 *@description 下一个元素
+					 */
+					next: function() {
+						var nx = this[0];
+						if (node.nextSibling.nodeType == 3) {
+							node = node.nextSibling.nextSibling;
+						} else {
+							node = node.nextSibling;
+						}
+						return xtx.$(node);
+					},
+					/**
+					 *@description 上一个元素
+					 */
+					prev: function() {
+						var nx = this[0];
+						if (node.previousSibling.nodeType == 3) {
+							node = node.previousSibling.previousSibling;
+						} else {
+							node = node.previousSibling;
+						}
+						return xtx.$(node);
+					},
+					/**
+					 *@description 相邻元素
+					 */
+					siblings: function() {
+						var r = [],
+							that = this[0],
+							n = that,
+							k = that;
+						for (; k; k = k.previousSibling) {
+							if (k.nodeType === 1 && k != this[0]) {
+								r.push(k)
+							}
+						}
+						for (; n; n = n.nextSibling) {
+							if (n.nodeType === 1 && n != this[0]) {
+								r.push(n)
+							}
+						}
+						return xtx.$(r)._rejection();
+					},
+					children: function() {},
+					parent: function() {},
+					find: function() {}
 				}
 				selector.fn.init.prototype = selector.fn;
 				return selector(str);
@@ -220,27 +316,22 @@
 				}
 
 			},
-			each: function(arr, func) {
-				if (typeof arr != ('boolean' || 'number' || 'string')) {
-					//arr = new Array(arr);
-					if (arr.constructor == Object) {
-						for (var i in arr) {
-							func.call(arr[i], arr[i]);
-						}
-					} else if (arr.constructor == String) {
-						func.call(arr, arr);
-					} else {
-						for (var i = 0, len = arr.length; i < len; i++) {
-							func.call(arr[i], arr[i]);
-						}
-					}
+			/**
+			 *@version:0.1 
+			 *@description 数组，对象等统一处理方法
+			 *@chagne:更改判断循环方法
+			 */
+			each: function(obj, fn) {
+				if (obj.length == undefined) {
+					for (var i in obj)
+						fn.call(obj[i], obj);
 				} else {
-					func.call(arr, arr);
+					for (var i = 0, ol = obj.length; i < ol; i++) {
+						if (fn.call(obj[i], obj) === false)
+							break;
+					}
 				}
 			},
-			/**
-			 *@author tianxin@leju.com
-			 */
 			Callback: function(str) {
 				str = str || 'base';
 				var opt = CallbackQueue[str] ? CallbackQueue[str] : CallbackQueue[str] = [],
@@ -386,6 +477,29 @@
 				}
 			}
 			return false;
+		},
+		text: function(elem) {
+			var node,
+				ret = "",
+				i = 0,
+				nodeType = elem.nodeType;
+			if (!nodeType) {
+				for (;
+					(node = elem[i]); i++) {
+					ret += xtx.text(node);
+				}
+			} else if (nodeType === 1 || nodeType === 9 || nodeType === 11) {
+				if (typeof elem.textContent === "string") {
+					return xtx.trim(elem.textContent);
+				} else {
+					for (elem = elem.firstChild; elem; elem = elem.nextSibling) {
+						ret += xtx.text(elem);
+					}
+				}
+			} else if (nodeType === 3 || nodeType === 4) {
+				return xtx.trim(elem.nodeValue);
+			}
+			return xtx.trim(ret);
 		},
 		/**
 		 * @description 元素触发事件队列，可以进行一次事件触发绑定或者多次触发事件的绑定
