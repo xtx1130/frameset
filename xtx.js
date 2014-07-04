@@ -92,8 +92,8 @@
 									console.log(this)
 									var temo = this.getElementsByTagName(name);
 									if (temo) {
-										for (var o in temo) {
-											if (typeof temo[o] == 'object') //.constructor.toString().match(/html/ig))
+										for (var o = 0; o < temo.length; o++) {
+											if (typeof temo[o] == 'object')
 												temarr.push(temo[o])
 										}
 									}
@@ -158,13 +158,13 @@
 					 */
 					_rejection: function() {
 						var that = this,
-							arr = [];
+							r = [];
 						for (var i = 0, len = that.length; i < len; i++) {
-							if (!that[i].nodeName.match(/script|meta|title|link/ig)) {
-								arr.push(that[i]);
+							if (that[i].nodeName&&!that[i].nodeName.match(/script|meta|title|link/ig)) {
+								r.push(that[i]);
 							}
 						}
-						return xtx.$(arr);
+						return xtx.$(r);
 					},
 					/**
 					 *@description 下一个元素
@@ -210,9 +210,96 @@
 						}
 						return xtx.$(r)._rejection();
 					},
-					children: function() {},
-					parent: function() {},
-					find: function() {}
+					children: function() {
+						var r = [],
+							that = this[0],
+							chidren = that.childNodes;
+						for (var i = 0, len = chidren.length; i < len; i++) {
+							if (chidren[i].nodeType === 1) {
+								r.push(chidren[i])
+							}
+						}
+						return xtx.$(r)._rejection();
+					},
+					parent: function() {
+						var that = this[0],
+							parent = that.parentNode;
+						return xtx.$(parent)._rejection();
+					},
+					//TO DO
+					_find: function(str) {},
+					bind: function(type, fn) {
+						var that = this[0];
+						if (window.addEventListener) {
+							that.addEventListener(type, fn, false);
+						} else if (window.attachEvent) {
+							that['e' + type + fn] = fn;
+							that[type + fn] = function() {
+								that['e' + type + fn](window.event);
+							}
+							that.attachEvent('on' + type, that[type + fn]);
+						}
+					},
+					on: function(type, elem, fn) {
+						xtx.$(document).bind(type, function(e) {
+							e=event||e;
+							var that = xtx.$(elem),
+								target = e.target||e.srcElement;
+							xtx.each(that, function() {
+								if (this == target)
+									fn.call(xtx.$(target))
+								else {
+									for (var i in xtx.$(this).children()) {
+										if (xtx.$(this).children()[i] == target) {
+											fn.call(xtx.$(target));
+											break;
+										}
+									}
+								}
+							})
+						});
+					},
+					trigger: function(type) {
+						var kind = '';
+						if (type.match(/abort|blur|change|error|focus|load|reset|resize|scroll|select|submit|unload/ig)) {
+							kind = 'HTMLEvents';
+						} else if (type.match(/DOMActivate|DOMFocusIn|DOMFocusOut|keydown|keypress|keyup/ig)) {
+							kind = 'UIEevents';
+						} else if (type.match(/click|mousedown|mousemove|mouseout|mouseover|mouseup/ig)) {
+							kind = 'MouseEvents';
+						}
+						try {
+							var evObj = document.createEvent(kind);
+							evObj.initEvent(type, true, false);
+							this[0].dispatchEvent(evObj);
+						} catch (e) {
+							this[0].fireEvent('on' + type);
+						}
+					},
+					text: function() {
+						var node,
+							ret = "",
+							i = 0,
+							that = this[0],
+							nodeType = that.nodeType;
+						if (!nodeType) {
+							for (;
+								(node = that[i]); i++) {
+								ret += xtx.$(node).text();
+							}
+						} else if (nodeType === 1 || nodeType === 9 || nodeType === 11) {
+							if (typeof that.textContent === "string") {
+								return xtx.trim(that.textContent);
+							} else {
+								for (that = that.firstChild; that; that = that.nextSibling) {
+									ret += xtx.$(that).text();
+								}
+							}
+						} else if (nodeType === 3 || nodeType === 4) {
+							return xtx.trim(that.nodeValue);
+						}
+						return xtx.trim(ret);
+					}
 				}
 				selector.fn.init.prototype = selector.fn;
 				return selector(str);
@@ -317,7 +404,7 @@
 
 			},
 			/**
-			 *@version:0.1 
+			 *@version:0.1
 			 *@description 数组，对象等统一处理方法
 			 *@chagne:更改判断循环方法
 			 */
@@ -477,29 +564,6 @@
 				}
 			}
 			return false;
-		},
-		text: function(elem) {
-			var node,
-				ret = "",
-				i = 0,
-				nodeType = elem.nodeType;
-			if (!nodeType) {
-				for (;
-					(node = elem[i]); i++) {
-					ret += xtx.text(node);
-				}
-			} else if (nodeType === 1 || nodeType === 9 || nodeType === 11) {
-				if (typeof elem.textContent === "string") {
-					return xtx.trim(elem.textContent);
-				} else {
-					for (elem = elem.firstChild; elem; elem = elem.nextSibling) {
-						ret += xtx.text(elem);
-					}
-				}
-			} else if (nodeType === 3 || nodeType === 4) {
-				return xtx.trim(elem.nodeValue);
-			}
-			return xtx.trim(ret);
 		},
 		/**
 		 * @description 元素触发事件队列，可以进行一次事件触发绑定或者多次触发事件的绑定
