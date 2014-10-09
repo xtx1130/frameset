@@ -7,58 +7,84 @@
  *@param {Function|null} [callback] 引入文件后的回调
  *@method define
  *@param {String} [id] 定义的文件（函数）id
- *@param {Array|null} [deps] 依赖关系,所依赖的文件 
+ *@param {Array|null} [deps] 依赖关系,所依赖的文件
  *@param {Function} [factory] define定义的函数
  *@description 有全局参数ex.modules.name.exports来选择模块中的return值进行调用
-*/
+ */
 (function(_) {
-	var modules = {},//存储全部define信息
-		exports = [],//存储define的依赖返回值
-		exportsrequire = [],//存储require的文件的返回值
-		ex = {
-			define: function(id, deps, factory) {
-				if (modules[id]) {
-					throw "module " + id + " 模块已存在!";
-				}
-				if (arguments.length > 2) {
-					modules[id] = {
-						id: id,
-						deps: deps,
-						factory: factory,
-						exports:''
-					};
-				} else {
-					factory = deps;
-					modules[id] = {
-						id: id,
-						factory: factory
-					};
-					modules[id].exports = factory.call()||'';
-				}
-			},
-			require: function(id, callback) {
-				if (isArray(id)) {
-					if (id.length > 1) {
-						return makeRequire(id, callback);
-					}
-					id = id[0];
-					loadScript(id, function(loadmodule) {
-						if (!modules[loadmodule]) {
-							throw "module " + loadmodule + " not found";
-						}
-						if (callback) {
-							var module = build(modules[loadmodule], callback);
-							return module;
-						} else {
-							if (modules[id].factory) {
-								return build(modules[loadmodule]);
-							}
-							return modules[loadmodule].exports;
-						}
-					})
-				}
+	var modules = {}, //存储全部define信息
+		exports = [], //存储define的依赖返回值
+		exportsrequire = [], //存储require的文件的返回值
+		baseUrl = '',
+		branchPath = {},
+		script = document.getElementsByTagName('script');
+	var ex = {
+		define: function(id, deps, factory) {
+			if (modules[id]) {
+				throw "module " + id + " 模块已存在!";
 			}
-		};
+			if (arguments.length > 2) {
+				modules[id] = {
+					id: id,
+					deps: deps,
+					factory: factory,
+					exports: ''
+				};
+			} else {
+				factory = deps;
+				modules[id] = {
+					id: id,
+					factory: factory
+				};
+				modules[id].exports = factory.call(window) || '';
+			}
+		},
+		require: function(id, callback) {
+			if (Object.prototype.toString.call(id) === '[object Array]') {
+				if (id.length > 1) {
+					return makeRequire(id, callback);
+				}
+				id = id[0];
+				loadScript(id, function(loadmodule) {
+					if (!modules[loadmodule]) {
+						throw "module " + loadmodule + " not found";
+					}
+					if (callback) {
+						var module = build(modules[loadmodule], callback);
+						return module;
+					} else {
+						if (modules[id].factory) {
+							return build(modules[loadmodule]);
+						}
+						return modules[loadmodule].exports;
+					}
+				})
+			}
+		}
+	};
+	ex.require.config = function(obj) {
+		branchPath = obj['paths'] || '',
+		baseUrl = obj['baseUrl'] || '';
+	}
+    //阻塞加载执行javascript
+	function ajaxstop(url) {
+		var XMLHttpReq;
+		try {
+			XMLHttpReq = new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (E) {
+			try {
+				XMLHttpReq = new ActiveXObject("Microsoft.XMLHTTP"); 
+			} catch (E) {
+				XMLHttpReq = new XMLHttpRequest(); 
+			}
+		}
+		XMLHttpReq.open("GET", url, false);  
+	    XMLHttpReq.send(null);
+	    var se = document.createElement('script');
+	    se.type = 'text/javascript';
+	    se.text = XMLHttpReq.responseText;
+	    document.getElementsByTagName('HEAD').item(0).appendChild(se)
+	}
 
 	function each(obj, fn) {
 		if (obj.length == undefined) {
@@ -72,16 +98,9 @@
 		}
 	}
 
-	function isFunction(it) {
-		return Object.prototype.toString.call(it) === '[object Function]';
-	}
-
-	function isArray(it) {
-		return Object.prototype.toString.call(it) === '[object Array]';
-	}
-
 	function loadScript(path, callback) {
 		var def = path.split('/').pop();
+		callback = callback || function() {};
 		if (def.match('.js')) {
 			def = def.split('.js')[0];
 			path = path.split('.js')[0];
@@ -90,11 +109,14 @@
 			Script = document.createElement('script'),
 			done = document.dispatchEvent;
 		Script.type = 'text/javascript';
-		Script.src = path + '.js';
+		if (baseUrl)
+			Script.src = baseUrl + path + '.js';
+		else
+			Script.src = path + '.js';
 		Head.appendChild(Script);
 		Script[done ? 'onload' : 'onreadystatechange'] = function() {
 			if (done || /load|complete/i.test(Script.readyState)) {
-				callback.call(window,def)
+				callback.call(window, def)
 			}
 		}
 	}
@@ -107,7 +129,7 @@
 			loadScript(singlemodule, function(loadmodule) {
 				if (modules[loadmodule]['deps']) {
 					parseDeps(modules[loadmodule], function() {
-						modules[loadmodule]['exports'] = modules[loadmodule].factory.call()||'';
+						modules[loadmodule]['exports'] = modules[loadmodule].factory.call() || '';
 						//TO DO:返回暂时没用，用遍历deps来确定参数
 						exports.push(modules[loadmodule]['exports']);
 						if (arr.length == 0) {
@@ -138,10 +160,10 @@
 		if (module['deps']) {
 			depsList = parseDeps(module, function() {
 				var tem = [];
-				for(var i=0,len= module['deps'].length;i<len;i++){
-					modules[module['deps'][i]]['exports']?tem.push(modules[module['deps'][i]]['exports']):tem;
+				for (var i = 0, len = module['deps'].length; i < len; i++) {
+					modules[module['deps'][i]]['exports'] ? tem.push(modules[module['deps'][i]]['exports']) : tem;
 				}
-				exportsrequire.push(module['exports']=factory.apply(module, tem));
+				exportsrequire.push(module['exports'] = factory.apply(module, tem));
 				if (callback) {
 					callback.apply(module, exportsrequire);
 					ex.modules = modules;
@@ -163,20 +185,20 @@
 		(function recur(singlemodule) {
 			loadScript(singlemodule, function(loadmodule) {
 				if (modules[loadmodule]['deps']) {
-					tem = build(modules[loadmodule],function(){
-						if(arr.length==0){
-							if(factory)
+					tem = build(modules[loadmodule], function() {
+						if (arr.length == 0) {
+							if (factory)
 								factory.apply(window, tem)
-						}else{
+						} else {
 							recur(arr.shift());
 						}
 					})
-				}else{
-					tem = build(modules[loadmodule],function(){
-						if(arr.length==0){
-							if(factory)
+				} else {
+					tem = build(modules[loadmodule], function() {
+						if (arr.length == 0) {
+							if (factory)
 								factory.apply(window, tem)
-						}else{
+						} else {
 							recur(arr.shift());
 						}
 					})
@@ -195,5 +217,10 @@
 	} else {
 		_.require = ex.require;
 		_.define = ex.define;
+	}
+	for (var i = 0, len = script.length; i < len; i++) {
+		if (script[i].getAttribute('src').match('xtxAMD') && script[i].getAttribute('data-main')) {
+			ajaxstop(script[i].getAttribute('data-main'))
+		}
 	}
 })(window);
