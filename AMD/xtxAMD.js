@@ -15,7 +15,7 @@
 	var modules = {}, //存储全部define信息
 		exports = [], //存储define的依赖返回值
 		exportsrequire = [], //存储require的文件的返回值
-		baseUrl = '',
+		baseUrl = '', 
 		branchPath = {},
 		script = document.getElementsByTagName('script');
 	var ex = {
@@ -37,7 +37,7 @@
 					factory: factory
 				};
 				modules[id].exports = factory.call(window) || '';
-			}
+			}	
 		},
 		require: function(id, callback) {
 			if (Object.prototype.toString.call(id) === '[object Array]') {
@@ -161,6 +161,9 @@
 			depsList = parseDeps(module, function() {
 				var tem = [];
 				for (var i = 0, len = module['deps'].length; i < len; i++) {
+					if(module['deps'][i].match(/\//)){
+						module['deps'][i] = module['deps'][i].split('/').pop();
+					}
 					modules[module['deps'][i]]['exports'] ? tem.push(modules[module['deps'][i]]['exports']) : tem;
 				}
 				exportsrequire.push(module['exports'] = factory.apply(module, tem));
