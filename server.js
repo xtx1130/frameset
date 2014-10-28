@@ -30,7 +30,7 @@ server.on('request',function(request,response){
 			response.end();
 		}
 		else{
-			response.writeHead(200,{"Content-Type":"type"});
+			response.writeHead(200,{"Content-Type":type});
 			response.write(content);
 			response.end();
 		}
