@@ -1,5 +1,4 @@
 define('LETcore', function() {
-	var CallbackQueue = {};
 	var LET = (function() {
 		return {
 			_extend: function(destination, source) {
@@ -35,6 +34,7 @@ define('LETcore', function() {
 	LET.ext({
 		Callback: function(str) {
 			str = str || 'base';
+			var CallbackQueue = {};
 			var opt = CallbackQueue[str] ? CallbackQueue[str] : CallbackQueue[str] = [],
 				reg = /oncememory/ig,
 				self = {
@@ -52,7 +52,6 @@ define('LETcore', function() {
 						var temlist = [];
 						if (opt && opt.length != 0 && str.match(reg)) {
 							opt.shift().call(obj,data);
-							opt = [];
 						} else if (opt && opt.length != 0 && !str.match(reg)) {
 							while (opt.length) {
 								var tem = opt.shift();
@@ -65,9 +64,6 @@ define('LETcore', function() {
 					disable: function() {
 						if (opt)
 							opt = undefined;
-					},
-					queue: function() {
-						return opt;
 					}
 				};
 			return self;
@@ -75,6 +71,7 @@ define('LETcore', function() {
 		Deferred: function() {
 			var _this,
 				fired,
+				str = str||'',
 				donemem = LET.Callback('doneoncememory'),
 				failmem = LET.Callback('failoncememory'),
 				mem = LET.Callback('memory');
@@ -132,21 +129,21 @@ define('LETcore', function() {
 					if (mem.queue().length != 1)
 						mem.add(func);
 					mem.fire();
-					return _this;
+					return _this.promise();
 				},
 				_done: function(func) {
 					donemem.add(func);
 					delete _this._always;
 					delete _this._fail;
 					delete _this._done;
-					return _this;
+					return _this.promise();
 				},
 				_fail: function(func) {
 					failmem.add(func);
 					delete _this._always;
 					delete _this._done;
 					delete _this._fail;
-					return _this;
+					return _this.promise();
 				}
 			};
 			deferred.prototype.constructor = deferred;
