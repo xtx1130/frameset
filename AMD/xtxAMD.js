@@ -62,7 +62,7 @@
 			}
 		}
 	};
-	ex.require.config = function(obj) {
+	ex.require.config = ex.require.config||function(obj) {
 		branchPath = obj['paths'] || '',
 		baseUrl = obj['baseUrl'] || '';
 	}
@@ -109,10 +109,10 @@
 			Script = document.createElement('script'),
 			done = document.dispatchEvent;
 		Script.type = 'text/javascript';
-		if (baseUrl)
-			Script.src = baseUrl + path + '.js';
+		if (ex.require.config.baseUrl){
+			Script.src = ex.require.config.baseUrl + (ex.require.config.paths[def]||path).split('.js')[0]+ '.js';}
 		else
-			Script.src = path + '.js';
+			Script.src = (ex.require.config.paths[def]||path).split('.js')[0] + '.js';
 		Head.appendChild(Script);
 		Script[done ? 'onload' : 'onreadystatechange'] = function() {
 			if (done || /load|complete/i.test(Script.readyState)) {
