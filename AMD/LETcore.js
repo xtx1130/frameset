@@ -1,3 +1,10 @@
+require.config={
+	baseUrl:'http://localhost:8000/',
+	paths:{
+		cd:'cd/cd.js',
+		cd1:'cd/cd1/cd1'
+	}
+}
 define('LETcore', function() {
 	var LET = (function() {
 		return {
