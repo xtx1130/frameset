@@ -1,0 +1,32 @@
+<html>
+		<body>
+		<meta charset="UTF-8">
+		<ul id ="qq">
+			sada
+			<li>
+				<ul class="qq" id="qq2" style="display:none">
+					<li class="qq1" lsrc="">
+						<p lsrc="">class qq1</p>
+						<p></p>
+				    </li>
+					<li class="qq1">
+						<p>ss</p>
+					</div>
+				    <li id = "qq1">撒大大
+				    </li>
+				</ul>
+			</li>
+		</ul>
+</body>
+</html>
+<script>
+var menuul = document.getElementById('qq'),
+	slide = document.getElementById('qq2');
+menuul.addEventListener('click',function(e){
+	e.stopPropagation()
+	slide.style.display=='none'?slide.style.display='':slide.style.display='none';
+})
+window.addEventListener('click',function(){
+	slide.style.display='none'
+})
+</script>

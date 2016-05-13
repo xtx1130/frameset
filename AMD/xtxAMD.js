@@ -106,7 +106,7 @@
 	function loadScript(path, callback) {
 		var def = path,
 		callback = callback || function() {};
-		if (def.match('.js')) {
+        if (def&&def.match('.js')) {
 			def = def.split('.js')[0];
 			path = path.split('.js')[0];
 		}
@@ -130,9 +130,10 @@
 		var deps = module['deps'],
 			arr = deps.slice(0),
 			cb = callback || function() {};
+			console.log(cb)
 		(function recur(singlemodule) {
 			loadScript(singlemodule, function(loadmodule) {
-				if (modules[loadmodule]['deps']) {
+                if (loadmodule&&modules[loadmodule]&&modules[loadmodule]['deps']) {
 					parseDeps(modules[loadmodule], function() {
 						modules[loadmodule]['exports'] = modules[loadmodule].factory.call() || '';
 						//TO DO:返回暂时没用，用遍历deps来确定参数
@@ -142,11 +143,13 @@
 				} else arr.length == 0?cb.call():recur(arr.shift());
 			})
 		})(arr.shift())
+				
 		//返回函数return值供callback调用
 		return exports;
 	}
 	//对require的解析
 	function build(module, callback) {
+		console.log(callback,module,module['deps'])
 		if(module){
             var depsList, existMod,
                 factory = module['factory'],
@@ -158,12 +161,21 @@
                         modules[module['deps'][i]]&&modules[module['deps'][i]]['exports'] ? tem.push(modules[module['deps'][i]]['exports']) : tem;
                     }
                     exportsrequire.push(module['exports'] = factory.apply(module, tem));
+                    console.log(callback)
                     if (callback) {
+                    	console.log(module,exportsrequire)
                         callback.apply(module, exportsrequire);
                         ex.modules = modules;
                     }
                 });
-            }else callback?callback.call():true;
+            }else {
+            	exportsrequire.push(module['exports']);
+            	if (callback) {
+                    	console.log(module,exportsrequire)
+                        callback.apply(module, exportsrequire);
+                        ex.modules = modules;
+                    }
+            }
         }else callback?callback.call():true;
         return exportsrequire;
 	}
@@ -178,11 +190,12 @@
 						if (arr.length == 0) {
 							if (factory)
 								factory.apply(window, exportsrequire)
+                                return;
 						} else {
 							recur(arr.shift());
 						}
 					})
-				if (arr.length == 0) return;
+			
 			})
 		})(arr.shift());
 	}

@@ -1,0 +1,52 @@
+<html>
+		<body>
+		<meta charset="UTF-8">
+		<script type="text/javascript" src="xtxAMD.js" data-main = "LETcore.js"></script>
+		<div class="qq" id ="qq" onclick="alert(3)">
+			<div class="qq1" lsrc>
+				<p lsrc="">class qq1<span>ceshi</span></p>
+				<p></p>
+		    </div>
+			<div class="qq1">
+				<p>ss</p>
+			</div>
+		    <div id = "qq1">
+		    </div>
+		</div>
+		<form id="form1" action="1.html" class="Ajax">
+			<span class="error_text"></span>
+			<input class="rEmail on">
+			<a class="submit" href="#">commit</a>
+		</form> 
+</body>
+</html>
+<script>
+	document.getElementById('qq').addEventListener('click',function(){alert(1)},false)
+	document.getElementById('qq').addEventListener('click',function(){alert(2)},true)
+	//document.getElementById('qq').addEventListener('click',function(){alert(3)},false)
+	require.config={
+		baseUrl:'http://localhost:8000/',
+		paths:{
+			//cd:'cd/cd.js',
+			'cd1':'cd/cd1/cd1'
+		}
+	}
+	require(['cd1'],function(a){
+		console.log(a)
+	})
+	// require(['LETselector','LETui'],function(){
+	// 	//console.log(LET.$('.qq').find('#qq2'))
+	// 	console.log(LET.$('#qq p[lsrc]'))
+	// 	LET.$('#qq p[lsrc]')
+		
+	// 	//console.log(LET.$('.qq1 p span').parent('div'))
+	// 	//LET.$('.qq').on('click','.qq1',function(){alert(1)})
+	// })
+	//xtx.$('.qq');
+	/*(function(){console.log(xtx.$('#qq #qq1'));
+		console.log(xtx.$('.qq .qq1 p'),xtx.$(xtx.$('.qq .qq1 p')))
+	/*console.log(xtx.$('<span class="1">sada</span>'))}
+	())*/
+//xtx.load(['http://jsqmt.qq.com/cdn_djl.js','http://ra.gtimg.com/icast/1670510/icast_qq.js'])
+ /* son1.js */
+</script>

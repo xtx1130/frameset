@@ -17,6 +17,13 @@
 				if (extended) extended(this);
 			},
 			/**
+			 * @description ajax settings
+			 * @param {object} obj 传入的对象参数
+			 */
+			ajaxSettings: function(obj) {
+				return;
+			},
+			/**
 			 *@version:0.2
 			 *@description:selector
 			 *@change:增加一些选择器扩展方法，内部封装selector，不可使用fn添加方法！！
@@ -89,7 +96,6 @@
 								return temo.length == 1 ? temo[0] : temo;
 							} else if (obj) {
 								xtx.each(obj, function() {
-									console.log(this)
 									var temo = this.getElementsByTagName(name);
 									if (temo) {
 										for (var o = 0; o < temo.length; o++) {
@@ -160,7 +166,7 @@
 						var that = this,
 							r = [];
 						for (var i = 0, len = that.length; i < len; i++) {
-							if (that[i].nodeName&&!that[i].nodeName.match(/script|meta|title|link/ig)) {
+							if (that[i].nodeName && !that[i].nodeName.match(/script|meta|title|link/ig)) {
 								r.push(that[i]);
 							}
 						}
@@ -242,9 +248,9 @@
 					},
 					on: function(type, elem, fn) {
 						xtx.$(document).bind(type, function(e) {
-							e=event||e;
+							e = event || e;
 							var that = xtx.$(elem),
-								target = e.target||e.srcElement;
+								target = e.target || e.srcElement;
 							xtx.each(that, function() {
 								if (this == target)
 									fn.call(xtx.$(target))
@@ -326,7 +332,7 @@
 							pattern = new RegExp('(^|\\s)' + searchClass + '(\\s|$)'),
 							k, j;
 						for (k = 0, j = 0; k < elsLen; k++) {
-							if (pattern.test(els[k].className)) {
+							if (els[k].nodeType == 1 && pattern.test(els[k].className)) {
 								classElements[j] = els[k];
 								j++;
 							}
@@ -426,21 +432,23 @@
 					self = {
 						add: function() {
 							xtx.each(arguments, function(e) {
-								if (e && typeof e == 'function') {
-									var tem = e;
+								if (this && typeof this == 'function') {
+									var tem = this;
 									opt.push(tem);
 								}
 							});
 						},
-						fire: function(o) {
+						fire: function(obj, data) {
+							obj = obj || window;
+							data = data || window;
 							var temlist = [];
 							if (opt && opt.length != 0 && str.match(reg)) {
-								opt.shift().call(this, o);
+								opt.shift().call(obj, data);
 								opt = [];
 							} else if (opt && opt.length != 0 && !str.match(reg)) {
 								while (opt.length) {
 									var tem = opt.shift();
-									tem.call(this, o);
+									tem.call(obj, data);
 									temlist.push(tem);
 								}
 								opt = temlist;
@@ -458,20 +466,22 @@
 			},
 			Deferred: function() {
 				var _this,
-					oncemem = xtx.Callback('oncememory'),
+					fired,
+					donemem = xtx.Callback('doneoncememory'),
+					failmem = xtx.Callback('failoncememory'),
 					mem = xtx.Callback('memory');
 
 				function deferred() {
 					_this = this;
 				};
 				deferred.prototype = {
-					resolve: function(fn) {
-						_this._always.apply(this);
-						_this._done.call(this, fn);
+					resolve: function(obj, data) {
+						donemem.fire(obj, data);
+						return this;
 					},
-					reject: function(fn) {
-						_this._always.call(this);
-						_this._fail.call(this, fn);
+					reject: function(obj, data) {
+						failmem.fire(obj, data);
+						return this;
 					},
 					state: (function() {
 						return {
@@ -510,22 +520,21 @@
 						}
 					},
 					_always: function(func) {
+						func = func;
 						if (mem.queue().length != 1)
 							mem.add(func);
 						mem.fire();
 						return _this;
 					},
 					_done: function(func) {
-						oncemem.add(func);
-						oncemem.fire();
+						donemem.add(func);
 						delete _this._always;
 						delete _this._fail;
 						delete _this._done;
 						return _this;
 					},
 					_fail: function(func) {
-						oncemem.add(func);
-						oncemem.fire();
+						failmem.add(func);
 						delete _this._always;
 						delete _this._done;
 						delete _this._fail;
@@ -864,6 +873,44 @@
 			}
 			script.src = url;
 			document.getElementsByTagName("head")[0].appendChild(script);
+		},
+		ajax: function(obj) {
+			obj = obj || {};
+			obj.url = obj.url || '';
+			obj.method = obj.method || 'get';
+			obj.async = obj.async || true;
+			obj.data = obj.data || {};
+			obj.success = (typeof obj.success == 'function') ? obj.success : function() {};
+			obj.error = (typeof obj.success == 'function') ? obj.success : function() {};
+			obj.beforeSend = (typeof obj.beforeSend == 'function') ? obj.success : function() {};
+			var XMLHttpReq,
+				def = xtx.Deferred();
+			try {
+				XMLHttpReq = new ActiveXObject("Msxml2.XMLHTTP");
+			} catch (E) {
+				try {
+					XMLHttpReq = new ActiveXObject("Microsoft.XMLHTTP");
+				} catch (E) {
+					XMLHttpReq = new XMLHttpRequest();
+				}
+			}
+			XMLHttpReq.open(obj.method, obj.url, obj.async);
+			//XMLHttpReq.onreadystatechange = processResponse;
+			XMLHttpReq.send(obj.data);
+			if (XMLHttpReq.readyState == 4) {
+				if (XMLHttpReq.status == 200) {
+					var text = XMLHttpReq.responseText;
+					text = window.decodeURI(text);
+					def.resolve();
+					return def;
+				} else {
+					def.reject();
+					return def;
+				}
+			} else {
+				def.reject();
+				return def;
+			}
 		},
 		/**
 		 * @description 简易div拖动

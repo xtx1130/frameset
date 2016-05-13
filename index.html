@@ -1,0 +1,50 @@
+<html>
+		<body>
+		<meta charset="UTF-8">
+		<!--<script type="text/javascript" src="AMD/xtxAMD.js"></script>-->
+		<!--<script type="text/javascript" src="xtx.js"></script>-->
+		<script type="text/javascript" src="jquery.js"></script>
+		<script type="text/javascript" src="xtxjquery.js"></script>
+		<div class="qq" id ="qq">
+			<div class="qq1" lsrc="">
+				<p lsrc="">class qq1</p>
+				<p></p>
+		    </div>
+			<div class="qq1">
+				<p>ss</p>
+			</div>
+		    <div id = "qq1">
+		    </div>
+		</div>
+		<form id="form1" action="1.html" class="Ajax">
+			<span class="error_text"></span>
+			<input class="rEmail on">
+			<button type="submit" class="submit">commit</button>
+		</form> 
+</body>
+</html>
+<script>
+	xtx.a=1;
+	xtx.b=1
+	xtx.load('sizzle.js',function(){
+		console.log(1)
+	})
+	xtx.load(['sizzle.js','xtx.js'],function(){
+		console.log(Sizzle)
+	})
+	xtx.load('sizzle.js',function(){
+		console.log(1)
+	})
+	// require(['AMD/LETcore','AMD/LETselector'],function(){
+	// 	LET.$('#form1').bind('submit',function(e){
+	// 		e.preventDefault();
+	// 		console.log(1)
+	// 	})
+	// })
+	//xtx.$('.qq');
+	/*(function(){console.log(xtx.$('#qq #qq1'));
+		console.log(xtx.$('.qq .qq1 p'),xtx.$(xtx.$('.qq .qq1 p')))
+	/*console.log(xtx.$('<span class="1">sada</span>'))}
+	())*/
+//xtx.load(['http://jsqmt.qq.com/cdn_djl.js','http://ra.gtimg.com/icast/1670510/icast_qq.js'])
+</script>

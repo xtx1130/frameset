@@ -1,9 +1,8 @@
-define('LETselector',function(a,b){
-	console.log(a,b)
+var LET = {
 	/**
  	 *@descripttion:可用选择器：#id,.class,tag,[attr]
 	*/
-	LET.$=function(str) {
+	$$: function(str) {
 		var tempo = document,
 			tempopt,
 			regEncoding = "(?:\\\\.|[\\w\-?\\d*]|[^\\x00-\\xa0])+",
@@ -64,42 +63,23 @@ define('LETselector',function(a,b){
 				},
 				TAG: function(obj, name) {
 					obj = obj || document;
-					var temarr = [],attrName = arguments[2],
-						arrattr = [];//存储含有attr的数组
-					function checkre(arr,obj){//去除数组中的重复
-						if(arr.length==0){
-							return true
-						}
-						for(var i=0;i<arr.length;i++){
-							if(arr[i]==obj);
-								return false;
-						}
-						return true;
-					}
+					if (arguments[2])
+						obj = doAttr(obj, arguments[2]);
+					var temarr = [];
 					if (obj && !doChklen(obj)) {
 						var temo = obj.getElementsByTagName(name)
-						if (arguments[2]){
-							temo = doAttr(temo, arguments[2]);
-						}
-						if(temo)
-							return temo.length == 1 ? temo[0] : temo;
+						return temo.length == 1 ? temo[0] : temo;
 					} else if (obj) {
 						LET.each(obj, function() {
 							var temo = this.getElementsByTagName(name);
 							if (temo) {
 								for (var o=0;o<temo.length;o++) {
-									if (typeof temo[o] == 'object') {
-										if (attrName){
-											var t = doAttr(temo[o], attrName);
-											if(t&&checkre(arrattr,t)){
-												arrattr.push(t)	
-											}
-										}
-									}
+									if (typeof temo[o] == 'object') //.constructor.toString().match(/html/ig))
+										temarr.push(temo[o])
 								}
 							}
 						})
-						return arrattr.length == 1 ? arrattr[0] : arrattr;
+						return temarr.length == 1 ? temarr[0] : temarr;
 					} else {
 						var temo = obj.getElementsByTagName(name);
 						return temo.length == 1 ? temo[0] : temo;
@@ -135,11 +115,9 @@ define('LETselector',function(a,b){
 							for (var i = 0; i < temobj.length; i++) {
 								this[i] = temobj[i];
 							}
-						} else if (temobj){
+						} else {
 							this[0] = temobj;
 							var i = 1;
-						} else{
-							this[0] = temobj;
 						}
 					}
 				}
@@ -186,7 +164,7 @@ define('LETselector',function(a,b){
 			 */
 			prev: function() {
 				var nx = this[0];
-				if (node.previousSibling.nodeType == 3) {//html5 previousElementsSiblings
+				if (node.previousSibling.nodeType == 3) {
 					node = node.previousSibling.previousSibling;
 				} else {
 					node = node.previousSibling;
@@ -216,103 +194,24 @@ define('LETselector',function(a,b){
 			children: function() {
 				var r = [],
 					that = this[0],
-					chidren = that.childNodes||[];
-				if(chidren.length){
-					for (var i = 0, len = chidren.length; i < len; i++) {
-						if (chidren[i].nodeType === 1) {
-							r.push(chidren[i])
-						}
+					chidren = that.childNodes;
+				for (var i = 0, len = chidren.length; i < len; i++) {
+					if (chidren[i].nodeType === 1) {
+						r.push(chidren[i])
 					}
-					if(r.length)
-						return LET.$(r)._rejection();
-					else{
-						return new Array();
-					}
-				}else{
-					return new Array()
 				}
+				return LET.$(r)._rejection();
 			},
-			parent: function(str) {
+			parent: function() {
 				var that = this[0],
-					arr = [];
-				if(!arguments[0]){
-					var parent = that.parentNode;
-					return LET.$(parent)._rejection();
-				}else{
-					function dofind(obj){
-						var that = obj;
-						arr.push(that);
-						if(that.parentNode){
-							dofind(that.parentNode)
-						}else{
-							return arr;
-						}
-					}
-					dofind(that);
-					var ar = arr.slice(),
-						finalElem;
-					if(arr.length>=2){
-						ar.shift();
-						(function doparent(){
-							var temobj = LET.$(jselemSelected(str,ar.shift()));
-							for(var i = 0 ; i<temobj.length;i++){
-								for(var j = 0 ; j<arr.length;j++){
-									if(temobj[i]==arr[j]){
-										finalElem = arr[j]
-									}
-								}
-							}
-							if(ar.length&&!finalElem){
-								arguments.callee()
-							}else{
-								return;
-							}
-						})()
-						return LET.$(finalElem)
-					}else{
-						return LET.$(arr)
-					}
-				}
+					parent = that.parentNode;
+				return LET.$(parent)._rejection();
 			},
-			find: function(str){
-				var arr = [];
-				function dofind(obj){//递归遍历HTMLnode
-					var that = obj;
-					LET.each(that.children(),function(){
-						arr.push(this);
-						if(LET.$(this).children().length){
-							dofind(LET.$(this))
-						}
-					})
-				}
-				dofind(this);
-				if(!arguments[0])
-					return LET.$(arr)._rejection();
-				else{
-					var temobj = LET.$(jselemSelected(str,this[0]));
-					if(temobj.length==1){
-						for(var i = 0;i< arr.length;i++){
-							if(arr[i]==temobj[0]){
-								return LET.$(temobj[0])._rejection()
-							}
-						}
-					}else if(temobj.length==0){
-						return new Array();
-					}else{
-						var ar=[];
-						for(var i = 0;i<temobj.length;i++){
-							for(var j = 0 ;j<arr.length;j++){
-								if(temobj[i]==arr[j]){
-									ar.push(arr[j])
-								}
-							}
-						}
-						return LET.$(ar)._rejection()
-					}
-				}
-			},
+			//TO DO
+			_find: function(str) {},
 			bind: function(type, fn) {
-				LET.each(this, function() {
+				var that = this;
+				LET.each(that, function() {
 					var that = this;
 					if (window.addEventListener) {
 						that.addEventListener(type, fn, false);
@@ -326,7 +225,7 @@ define('LETselector',function(a,b){
 				})
 			},
 			on: function(type, elem, fn) {
-				this.bind(type, function(e) {
+				LET.$(document).bind(type, function(e) {
 					e=event||e;
 					var target = e.target||e.srcElement;
 					var that = LET.$(elem);
@@ -336,6 +235,7 @@ define('LETselector',function(a,b){
 						else {
 							for(var i in LET.$(this).children()){
 								if (LET.$(this).children()[i] == target){
+									//console.log(LET.$(this).children()[i],target)
 									fn.call(LET.$(target));
 									break;
 								}
@@ -394,7 +294,7 @@ define('LETselector',function(a,b){
 		function jselemSelected(str) {
 			str = LET.trim(str).split(' ') || 'window';
 
-			for (var i = 0, tempj = arguments[1]||''; i < str.length; i++) {
+			for (var i = 0, tempj = ''; i < str.length; i++) {
 				if (i < str.length - 1) {
 					tempj = doFind(tempj, str[i]);
 				} else if (i == str.length - 1) {
@@ -470,7 +370,7 @@ define('LETselector',function(a,b){
 		function doAttr(obj, attr) {
 			var temarr = [];
 			if (obj && !doChklen(obj)) {
-				if (obj.getAttribute(attr)!=null) {
+				if (obj.getAttribute(attr)) {
 					return obj;
 				}
 			} else if (obj) {
@@ -488,5 +388,21 @@ define('LETselector',function(a,b){
 				return true;
 			return false;
 		}
+
+	},
+	trim: function(str) {
+		return str.replace(/(^\s*)|(\s*$)/g, '');
+	},
+	each: function(obj, fn) {
+		if (obj.length == undefined) {
+			for (var i in obj)
+				fn.call(obj[i], obj);
+		} else {
+			for (var i = 0, ol = obj.length; i < ol; i++) {
+				//console.log(obj[i],i)
+				if (fn.call(obj[i], obj) === false)
+					break;
+			}
+		}
 	}
-})
+}

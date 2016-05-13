@@ -3,7 +3,7 @@
  *@author tianxin@leju.com
  */
 (function($, _) {
-	//基类，提供封装插件的一些方法
+	//基类，提供封装插件的一些方法相当于model层
 	var xtx = (function() {
 		//私有属性
 		var url = window.location.href,
@@ -16,6 +16,7 @@
 			},
 			BASE_URL: BASE_URL,
 			LOAD_ARR: [],
+			FLAG_ARR:[],
 			/**
 			 *@description 开辟子命名空间，支持开辟多级空间
 			 */
@@ -40,11 +41,18 @@
 				var baseobj = {},
 					fsobj = {},
 					arr = [];
-
 				function load(s) {
 					xtx.LOAD_ARR.push(arr[s]);
-					if (s == arr.length - 1) {
+					if(arr.length==0){
+						var k = setInterval(function(){
+							if(xtx.FLAG_ARR[src]){
+								clearInterval(k)
+								callback.call()
+							}
+						},100)
+					}else if (s == arr.length - 1) {
 						$.getScript(arr[s]).done(function() {
+							xtx.FLAG_ARR[s]=1
 							if (callback)
 								callback.call()
 						});
@@ -52,6 +60,7 @@
 						$.getScript(arr[s]).done(function() {
 							s++;
 							load(s);
+							xtx.FLAG_ARR[s]=1
 						}).progress(function() {
 							xtx.LOAD_ARR.pop();
 							load(s)
@@ -61,12 +70,18 @@
 				if (Object.prototype.toString.call(src) == '[object String]') {
 					for (var i = 0; i < xtx.LOAD_ARR.length; i++) {
 						if (xtx.LOAD_ARR[i] == src) {
-							callback.call();
+							var k = setInterval(function(){
+								if(xtx.FLAG_ARR[src]){
+									clearInterval(k)
+									callback.call()
+								}
+							},100)
 							return;
 						}
 					}
 					xtx.LOAD_ARR.push(src);
 					$.getScript(src).done(function() {
+						xtx.FLAG_ARR[src] = 1
 						callback.call()
 					});
 				} else if (Object.prototype.toString.call(src) == '[object Array]') {
@@ -158,9 +173,9 @@
 	//view 相关东西beginning,内容中绑定了界面元素
 	xtx.namespace('view');
 	xtx.view.formHanderConfig = {
-		commitstate:'status',
-		ajaxstate:'status',
-		ajaxtype:'post'
+		commitstate:'status',//ajax返回的提交状态接口
+		ajaxstate:'status',//ajax 验证返回的提交状态接口
+		ajaxtype:'post'//ajax 验证的提交method，默认为post
 	}
 	xtx.view.formHandler =function(id) {
 		/**
@@ -218,7 +233,7 @@
 			}
 		}
 
-		function ajaxConform(obj) {
+		function ajaxConform(obj) {//@e.g: <span  url_check="url" data="key{key1:data1,key2:data2}" value="data"></span>
 			var url = obj.attr('url_check'),
 				d = obj.attr('data').split(' '),
 				o = {},
@@ -316,5 +331,8 @@
 			});
 		});
 	} //formhander end
+	//相关sdk
+	xtx.namespace('controller');
+	//xtx.controller.
 	_.xtx = xtx;
 })(jQuery, window);
